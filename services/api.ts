@@ -21,7 +21,7 @@ let rations: Ration[] = [
 ];
 
 let articles: Article[] = [
-  { id: 'art1', created_at: new Date().toISOString(), organization_id: 'org1', status: ResourceStatus.Available, name: 'Coleira Anti-pulgas', category: ArticleCategory.Accessories, quantity: 5, condition: ArticleCondition.New, size_specification: 'Tamanho M' },
+  { id: 'art1', created_at: new Date().toISOString(), organization_id: 'org1', status: ResourceStatus.Available, name: 'Coleira Anti-pulgas', category: ArticleCategory.CollarsAndLeashes, quantity: 5, condition: ArticleCondition.New, size_specification: 'Tamanho M' },
 ];
 
 let resourceRequests: ResourceRequest[] = [

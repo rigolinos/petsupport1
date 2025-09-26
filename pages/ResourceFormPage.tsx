@@ -32,7 +32,7 @@ const ResourceFormPage: React.FC = () => {
   useEffect(() => {
     if (id && resourceType) {
       setLoading(true);
-      getResourceByIdAndType(id, resourceType).then(data => {
+      getResourceByIdAndType(resourceType, id).then(data => {
         if (data) {
           setFormData(data);
           if (data.photo_base64) {
@@ -78,8 +78,8 @@ const ResourceFormPage: React.FC = () => {
 
     // Ensure numeric fields are numbers
     const finalData = { ...formData, organization_id: user.id };
-    if ('quantity_kg' in finalData) finalData.quantity_kg = Number(finalData.quantity_kg);
-    if ('quantity' in finalData && resourceType === 'articles') finalData.quantity = Number(finalData.quantity);
+    if ('quantity_kg' in finalData && finalData.quantity_kg) finalData.quantity_kg = Number(finalData.quantity_kg);
+    if ('quantity' in finalData && resourceType === 'articles' && finalData.quantity) finalData.quantity = Number(finalData.quantity);
 
 
     if (isEditing) {
@@ -113,7 +113,7 @@ const ResourceFormPage: React.FC = () => {
                 <input name="active_ingredient" placeholder="Princípio Ativo" value={medicineData.active_ingredient || ''} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/>
                 <input name="quantity" placeholder="Quantidade (ex: 10 caixas)" value={medicineData.quantity || ''} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/>
                 <div><label className="text-sm text-gray-500">Data de Validade</label><input name="expiration_date" type="date" value={medicineData.expiration_date || ''} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/></div>
-                <textarea name="observations" placeholder="Observações (ex: manter refrigerado)" value={formData.observations || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/>
+                <textarea name="observations" placeholder="Observações (ex: manter refrigerado)" value={medicineData.observations || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/>
                 {commonFields}
             </>
         )};
@@ -124,7 +124,7 @@ const ResourceFormPage: React.FC = () => {
                 <input name="brand" placeholder="Marca da Ração" value={rationData.brand || ''} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/>
                 <input name="quantity_kg" type="number" placeholder="Quantidade (kg)" value={rationData.quantity_kg || ''} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/>
                 <div><label className="text-sm text-gray-500">Data de Validade</label><input name="expiration_date" type="date" value={rationData.expiration_date || ''} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/></div>
-                <textarea name="observations" placeholder="Observações (ex: para filhotes, raças pequenas)" value={formData.observations || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/>
+                <textarea name="observations" placeholder="Observações (ex: para filhotes, raças pequenas)" value={rationData.observations || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/>
                 {commonFields}
             </>
         )};
@@ -143,7 +143,7 @@ const ResourceFormPage: React.FC = () => {
                     {Object.values(ArticleCondition).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <input name="size_specification" placeholder="Tamanho/Especificação (ex: Tamanho G)" value={articleData.size_specification || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/>
-                <textarea name="observations" placeholder="Observações/Descrição" value={formData.observations || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/>
+                <textarea name="observations" placeholder="Observações/Descrição" value={articleData.observations || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border rounded-md bg-white text-gray-900"/>
                 {commonFields}
             </>
         )};

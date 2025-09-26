@@ -1,27 +1,28 @@
 export enum OrganizationStatus {
-  Pending = 'Pending',
-  Verified = 'Verified',
-  Rejected = 'Rejected',
+  Pending = 'Pendente',
+  Verified = 'Verificado',
+  Rejected = 'Rejeitado',
 }
 
 export enum ResourceStatus {
-  Available = 'Available',
-  Requested = 'Requested',
-  Donated = 'Donated',
+  Available = 'Disponível',
+  Requested = 'Solicitado',
+  Donated = 'Doado',
 }
 
 export enum ApplicationStatus {
-  Pending = 'Pending',
-  Approved = 'Approved',
-  Rejected = 'Rejected',
+  Pending = 'Pendente',
+  Approved = 'Aprovado',
+  Rejected = 'Rejeitado',
 }
 
 export enum ArticleCondition {
-  New = 'New',
-  Used = 'Used',
+  New = 'Novo',
+  Used = 'Usado',
 }
 
 export enum ArticleCategory {
+  CollarsAndLeashes = 'Coleiras e Guias',
   Accessories = 'Acessórios e Abrigo',
   Hygiene = 'Higiene e Limpeza',
   Others = 'Outros',

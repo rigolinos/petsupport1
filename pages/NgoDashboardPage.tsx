@@ -109,7 +109,7 @@ const NgoDashboardPage: React.FC = () => {
                             <p><strong>{org?.name || 'ONG'}</strong> solicitou <strong>{resource ? ('name' in resource ? resource.name : resource.brand) : 'item'}</strong>.</p>
                             <p className="text-sm text-gray-500">Status: {req.status}</p>
                         </div>
-                        {req.status === 'Pending' && (
+                        {req.status === ApplicationStatus.Pending && (
                             <div className="flex gap-2">
                                 <button onClick={() => handleRequestUpdate(req.id, ApplicationStatus.Approved)} className="bg-green-500 text-white px-3 py-1 rounded-md text-sm">Aprovar</button>
                                 <button onClick={() => handleRequestUpdate(req.id, ApplicationStatus.Rejected)} className="bg-red-500 text-white px-3 py-1 rounded-md text-sm">Recusar</button>

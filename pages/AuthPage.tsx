@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Organization } from '../types';
+import { Organization, OrganizationStatus } from '../types';
 
 const AuthPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('login'); // 'login', 'registerNgo'
@@ -29,7 +29,7 @@ const AuthPage: React.FC = () => {
     try {
       const user = await login(loginEmail, loginPassword);
       if (user?.type === 'organization') {
-        if(user.status === 'Pending') {
+        if(user.status === OrganizationStatus.Pending) {
           navigate('/pending-approval');
         } else {
           navigate('/doacoes');
@@ -102,7 +102,7 @@ const AuthPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-lg mx-auto mt-10">
+    <div className="w-full max-w-lg mx-auto">
       <div className="bg-white rounded-lg shadow-lg">
         <div className="flex border-b">
           <button onClick={() => setActiveTab('login')} className={`flex-1 py-3 text-center font-medium ${activeTab === 'login' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:bg-gray-50'}`}>Entrar</button>

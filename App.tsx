@@ -14,10 +14,10 @@ import ResourceDetailPage from './pages/ResourceDetailPage';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const isHomePage = location.pathname === '/';
+  const hasFullWidthLayout = ['/'].includes(location.pathname);
 
-  const mainClasses = isHomePage
-    ? "flex-grow"
+  const mainClasses = hasFullWidthLayout
+    ? "flex-grow flex"
     : "flex-grow container mx-auto px-4 py-8";
 
   return (

@@ -1,5 +1,4 @@
 
-
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -120,12 +119,16 @@ const DonationsPage: React.FC = () => {
     const orgMap = new Map(organizations.map(org => [org.id, org]));
     const uniqueStatesSet = new Set<string>();
 
-    const donationsWithOrg = donations.map(resource => {
+    // FIX: Use flatMap to create a correctly typed array of donations with their organization info.
+    // This avoids items with undefined organizations and resolves type errors when accessing organization properties.
+    const donationsWithOrg = donations.flatMap((resource): DonationItem[] => {
         const organization = orgMap.get(resource.organization_id);
-        if (organization) uniqueStatesSet.add(organization.state);
-        return { resource, organization };
-    // FIX: Use a type guard to correctly narrow the type of donationsWithOrg, ensuring that `organization` is not undefined. This resolves a potential typing error where `organization.state` could be accessed on an unknown type.
-    }).filter((item): item is { resource: ResourceItem, organization: Organization } => !!item.organization);
+        if (organization) {
+            uniqueStatesSet.add(organization.state);
+            return [{ resource, organization }];
+        }
+        return [];
+    });
 
     const filtered = donationsWithOrg.filter(item => {
         const { resource, organization } = item;
@@ -143,14 +146,14 @@ const DonationsPage: React.FC = () => {
         const matchesState = !stateFilter || organization.state === stateFilter;
         
         // Urgency filter
-        // FIX: Check for the existence of `expiration_date` before calling `isUrgent`. The `ResourceItem` type can be an `Article`, which does not have this property, causing a type error.
+        // FIX: Check for the existence of `expiration_date` before calling `isUrgent` because `Article` resources do not have this property.
         const matchesUrgent = !urgentFilter || ('expiration_date' in resource && isUrgent(resource.expiration_date));
 
         return matchesSearch && matchesCategory && matchesState && matchesUrgent;
     });
 
     return { 
-        filteredDonations: filtered as DonationItem[], 
+        filteredDonations: filtered, 
         uniqueStates: Array.from(uniqueStatesSet).sort() 
     };
 
@@ -192,8 +195,9 @@ const DonationsPage: React.FC = () => {
                 <option value="">Todas</option>
                 <option value="medicines">Medicamentos</option>
                 <option value="rations">Ração</option>
-                <option value={ArticleCategory.Accessories}>Acessórios e Abrigo</option>
-                <option value={ArticleCategory.Hygiene}>Higiene e Limpeza</option>
+                {Object.values(ArticleCategory).map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
             </select>
         </div>
          <div>

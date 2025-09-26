@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
 import { Organization, Medicine, Ration, Article, ResourceRequest, ResourceStatus, ApplicationStatus, Resource, ResourceType } from '../types';
 import * as api from '../services/api';
@@ -14,7 +15,7 @@ interface DataContextType {
   getOrganizationById: (id: string) => Promise<Organization | undefined>;
   addResource: (resourceData: Omit<Resource, 'id' | 'created_at'>, type: ResourceType) => Promise<Resource>;
   updateResource: (resourceData: Resource, type: ResourceType) => Promise<Resource>;
-  getResourceByIdAndType: (id: string, type: ResourceType) => Promise<Resource | undefined>;
+  getResourceByIdAndType: (type: ResourceType, id: string) => Promise<Resource | undefined>;
 
   createResourceRequest: (reqData: Omit<ResourceRequest, 'id'|'created_at'|'status'>) => Promise<ResourceRequest>;
   getResourceRequestsForNgo: (ngoId: string) => Promise<ResourceRequest[]>;

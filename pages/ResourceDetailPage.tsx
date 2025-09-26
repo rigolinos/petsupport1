@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { Resource, ResourceType, Organization } from '../types';
+import { Resource, ResourceType, Organization, ResourceStatus } from '../types';
 import Spinner from '../components/Spinner';
 import { Pill, Bone, Shirt, Edit, Trash2, Send, ChevronLeft } from 'lucide-react';
 
@@ -24,7 +24,7 @@ const ResourceDetailPage: React.FC = () => {
             }
             try {
                 setLoading(true);
-                const resourceData = await getResourceByIdAndType(id, type);
+                const resourceData = await getResourceByIdAndType(type, id);
                 if (resourceData) {
                     setResource(resourceData);
                     const orgData = await getOrganizationById(resourceData.organization_id);
@@ -64,9 +64,9 @@ const ResourceDetailPage: React.FC = () => {
     const getStatusChip = (status: string) => {
         const baseClasses = 'px-3 py-1 text-xs font-semibold rounded-full';
         switch (status) {
-            case 'Available': return `${baseClasses} bg-green-100 text-green-800`;
-            case 'Requested': return `${baseClasses} bg-yellow-100 text-yellow-800`;
-            case 'Donated': return `${baseClasses} bg-gray-200 text-gray-700`;
+            case ResourceStatus.Available: return `${baseClasses} bg-green-100 text-green-800`;
+            case ResourceStatus.Requested: return `${baseClasses} bg-yellow-100 text-yellow-800`;
+            case ResourceStatus.Donated: return `${baseClasses} bg-gray-200 text-gray-700`;
             default: return `${baseClasses} bg-gray-100 text-gray-600`;
         }
     };
