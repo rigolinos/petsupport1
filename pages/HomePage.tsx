@@ -19,7 +19,7 @@ const HomePage: React.FC = () => {
     <div>
       {/* Hero Section */}
       <section 
-        className="min-h-screen flex items-center justify-center text-white bg-cover bg-center bg-no-repeat -mt-16 md:-mt-20"
+        className="min-h-screen flex items-center justify-center text-white bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${heroImageURL})` }}
       >
         <div className="bg-black/50 absolute top-0 left-0 w-full h-full"></div>

@@ -5,7 +5,6 @@ import { useData } from '../context/DataContext';
 import { Link } from 'react-router-dom';
 import { Medicine, Ration, Article, ResourceStatus, Resource, ResourceType, Organization, ArticleCategory } from '../types';
 import Spinner from '../components/Spinner';
-import ErrorAlert from '../components/ErrorAlert';
 import { Pill, Bone, Shirt, MapPin, Calendar, Box, AlertTriangle, Search } from 'lucide-react';
 
 
@@ -99,7 +98,7 @@ const ResourceCard: React.FC<{ item: DonationItem }> = ({ item }) => {
 
 const DonationsPage: React.FC = () => {
   const { user } = useAuth();
-  const { organizations, medicines, rations, articles, loading: dataLoading, error, clearError } = useData();
+  const { organizations, medicines, rations, articles, loading: dataLoading } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -120,16 +119,18 @@ const DonationsPage: React.FC = () => {
     const orgMap = new Map(organizations.map(org => [org.id, org]));
     const uniqueStatesSet = new Set<string>();
 
-    // FIX: Use flatMap to create a correctly typed array of donations with their organization info.
-    // This avoids items with undefined organizations and resolves type errors when accessing organization properties.
-    const donationsWithOrg = donations.flatMap((resource): DonationItem[] => {
+    // FIX: Map resources to include their organization, then filter out any that are missing organization info.
+    // This ensures that `organization` is always a valid `Organization` object, resolving type errors.
+    const donationsWithOrg = donations
+      .map((resource): DonationItem | null => {
         const organization = orgMap.get(resource.organization_id);
         if (organization) {
-            uniqueStatesSet.add(organization.state);
-            return [{ resource, organization }];
+          uniqueStatesSet.add(organization.state);
+          return { resource, organization };
         }
-        return [];
-    });
+        return null;
+      })
+      .filter((item): item is DonationItem => item !== null);
 
     const filtered = donationsWithOrg.filter(item => {
         const { resource, organization } = item;
@@ -147,7 +148,6 @@ const DonationsPage: React.FC = () => {
         const matchesState = !stateFilter || organization.state === stateFilter;
         
         // Urgency filter
-        // FIX: Check for the existence of `expiration_date` before calling `isUrgent` because `Article` resources do not have this property.
         const matchesUrgent = !urgentFilter || ('expiration_date' in resource && isUrgent(resource.expiration_date));
 
         return matchesSearch && matchesCategory && matchesState && matchesUrgent;
@@ -171,11 +171,6 @@ const DonationsPage: React.FC = () => {
           Encontre itens essenciais doados por outras ONGs e solicite o que você precisa.
         </p>
       </div>
-
-      <ErrorAlert 
-        error={error} 
-        onClose={clearError} 
-      />
 
       {/* --- Filter Bar --- */}
       <div className="bg-white shadow-md rounded-lg p-4 mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">

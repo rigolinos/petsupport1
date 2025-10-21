@@ -3,572 +3,178 @@ import {
   OrganizationStatus, ResourceStatus, ApplicationStatus, ArticleCategory, ArticleCondition,
   ResourceType, Resource
 } from '../types';
-import { supabase } from './supabaseClient';
 
-// --- SUPABASE API FUNCTIONS ---
+// --- MOCK DATABASE ---
 
-// =============================================
-// AUTHENTICATION FUNCTIONS
-// =============================================
+let organizations: Organization[] = [
+  { id: 'org1', created_at: new Date().toISOString(), name: 'Cão Sem Fome', cnpj: '11.111.111/0001-11', city: 'São Paulo', state: 'SP', contact_email: 'caosemfome@test.com', contact_phone: '11999999999', status: OrganizationStatus.Verified, owner_user_id: 'user1', type: 'organization', password: 'password123' },
+  { id: 'org2', created_at: new Date().toISOString(), name: 'Patas Unidas', cnpj: '22.222.222/0001-22', city: 'Rio de Janeiro', state: 'RJ', contact_email: 'patasunidas@test.com', contact_phone: '21999999999', status: OrganizationStatus.Verified, owner_user_id: 'user2', type: 'organization', password: 'password123' },
+  { id: 'org3', created_at: new Date().toISOString(), name: 'Focinhos Carentes', cnpj: '33.333.333/0001-33', city: 'Belo Horizonte', state: 'MG', contact_email: 'focinhos@test.com', contact_phone: '31999999999', status: OrganizationStatus.Pending, owner_user_id: 'user3', type: 'organization', password: 'password123' },
+];
 
-export const login = async (email: string, password: string): Promise<Organization | null> => {
-  try {
-    // Fazer login no Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+let medicines: Medicine[] = [
+  { id: 'med1', created_at: new Date().toISOString(), organization_id: 'org2', status: ResourceStatus.Available, name: 'Vermífugo Drontal', active_ingredient: 'Praziquantel', quantity: '2 caixas', expiration_date: '2025-12-31' },
+];
 
-    if (authError) {
-      console.error('Auth error:', authError);
-      return null;
-    }
+let rations: Ration[] = [
+  { id: 'rat1', created_at: new Date().toISOString(), organization_id: 'org2', status: ResourceStatus.Available, brand: 'Golden Power Training', quantity_kg: 15, expiration_date: '2025-08-01' },
+];
 
-    if (!authData.user) {
-      return null;
-    }
+let articles: Article[] = [
+  { id: 'art1', created_at: new Date().toISOString(), organization_id: 'org1', status: ResourceStatus.Available, name: 'Coleira Anti-pulgas', category: ArticleCategory.CollarsAndLeashes, quantity: 5, condition: ArticleCondition.New, size_specification: 'Tamanho M' },
+];
 
-    // Buscar dados da organização
-    const { data: organization, error: orgError } = await supabase
-      .from('organizations')
-      .select('*')
-      .eq('owner_user_id', authData.user.id)
-      .single();
+let resourceRequests: ResourceRequest[] = [
+    { id: 'req1', created_at: new Date().toISOString(), resource_id: 'art1', resource_type: 'articles', donating_organization_id: 'org1', requesting_organization_id: 'org2', status: ApplicationStatus.Pending }
+];
 
-    if (orgError || !organization) {
-      console.error('Organization error:', orgError);
-      return null;
-    }
-
-    return {
-      ...organization,
-      type: 'organization' as const
-    };
-  } catch (error) {
-    console.error('Login error:', error);
-    return null;
-  }
+const db = {
+    organizations,
+    medicines,
+    rations,
+    articles,
+    resource_requests: resourceRequests
 };
 
-export const logout = async () => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Logout error:', error);
+const simulateDelay = (ms: number = 500) => new Promise(res => setTimeout(res, ms));
+
+const AUTH_USER_KEY = 'petconnect_auth_user';
+
+// --- API FUNCTIONS ---
+
+// Auth
+export const login = async (email: string, password: string): Promise<Organization | null> => {
+    await simulateDelay();
+    const org = db.organizations.find(o => o.contact_email === email && o.password === password);
+    if (org) {
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(org));
+        return { ...org, type: 'organization' };
     }
-  } catch (error) {
-    console.error('Logout error:', error);
-  }
+    return null;
+}
+
+export const logout = async () => {
+    await simulateDelay(200);
+    localStorage.removeItem(AUTH_USER_KEY);
 };
 
 export const getAuthenticatedUser = async (): Promise<Organization | null> => {
-  try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      return null;
+    await simulateDelay(100);
+    const storedUser = localStorage.getItem(AUTH_USER_KEY);
+    if (storedUser) {
+        const user = JSON.parse(storedUser) as Organization;
+        // Re-fetch from "DB" to ensure data is fresh
+        const freshUser = db.organizations.find(o => o.id === user.id);
+        return freshUser ? { ...freshUser, type: 'organization' } : null;
     }
-
-    const { data: organization, error: orgError } = await supabase
-      .from('organizations')
-      .select('*')
-      .eq('owner_user_id', user.id)
-      .single();
-
-    if (orgError || !organization) {
-      return null;
-    }
-
-    return {
-      ...organization,
-      type: 'organization' as const
-    };
-  } catch (error) {
-    console.error('Get authenticated user error:', error);
     return null;
-  }
 };
 
-export const registerNgo = async (
-  ngoData: Omit<Organization, 'id' | 'created_at' | 'type' | 'status' | 'password' | 'owner_user_id'>, 
-  password: string
-): Promise<Organization> => {
-  try {
-    // Criar usuário no Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: ngoData.contact_email,
-      password,
-      options: {
-        data: {
-          role: 'organization'
-        }
-      }
-    });
-
-    if (authError || !authData.user) {
-      throw new Error(authError?.message || 'Erro ao criar usuário');
+export const registerNgo = async (ngoData: Omit<Organization, 'id' | 'created_at' | 'type' | 'status' | 'password' | 'owner_user_id'>, password: string): Promise<Organization> => {
+    await simulateDelay();
+    if (db.organizations.some(o => o.contact_email === ngoData.contact_email)) {
+        throw new Error("Email already registered.");
     }
-
-    // Criar organização no banco
-    const { data: organization, error: orgError } = await supabase
-      .from('organizations')
-      .insert({
+    const newNgo: Organization = {
+        id: `org${db.organizations.length + 1}`,
+        owner_user_id: `user${db.organizations.length + 1}`,
+        created_at: new Date().toISOString(),
         ...ngoData,
-        owner_user_id: authData.user.id,
+        password,
         status: OrganizationStatus.Pending,
         type: 'organization'
-      })
-      .select()
-      .single();
-
-    if (orgError) {
-      // Se falhou ao criar organização, deletar o usuário criado
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      throw new Error(orgError.message);
-    }
-
-    return {
-      ...organization,
-      type: 'organization' as const
     };
-  } catch (error) {
-    console.error('Register NGO error:', error);
-    throw error;
-  }
-};
+    db.organizations.push(newNgo);
+    // Do not log in automatically, user should see pending page.
+    return newNgo;
+}
 
-// =============================================
-// ORGANIZATION FUNCTIONS
-// =============================================
-
+// Organizations
 export const getOrganizations = async (): Promise<Organization[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Get organizations error:', error);
-      return [];
-    }
-
-    return data.map(org => ({
-      ...org,
-      type: 'organization' as const
-    }));
-  } catch (error) {
-    console.error('Get organizations error:', error);
-    return [];
-  }
+    await simulateDelay();
+    return [...db.organizations];
 };
-
 export const getOrganizationById = async (id: string): Promise<Organization | undefined> => {
-  try {
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error || !data) {
-      return undefined;
-    }
-
-    return {
-      ...data,
-      type: 'organization' as const
-    };
-  } catch (error) {
-    console.error('Get organization by ID error:', error);
-    return undefined;
-  }
+    await simulateDelay();
+    return db.organizations.find(o => o.id === id);
 };
 
-// =============================================
-// RESOURCE FUNCTIONS
-// =============================================
-
+// Resources
 export const getMedicines = async (): Promise<Medicine[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('medicines')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Get medicines error:', error);
-      return [];
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Get medicines error:', error);
-    return [];
-  }
+    await simulateDelay();
+    return [...db.medicines];
 };
-
 export const getRations = async (): Promise<Ration[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('rations')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Get rations error:', error);
-      return [];
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Get rations error:', error);
-    return [];
-  }
+    await simulateDelay();
+    return [...db.rations];
 };
-
 export const getArticles = async (): Promise<Article[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('articles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Get articles error:', error);
-      return [];
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Get articles error:', error);
-    return [];
-  }
+    await simulateDelay();
+    return [...db.articles];
 };
 
 // Generic resource fetcher
 export const getById = async (key: ResourceType, id: string): Promise<Resource | undefined> => {
-  try {
-    const { data, error } = await supabase
-      .from(key)
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error || !data) {
-      return undefined;
-    }
-
-    return data as Resource;
-  } catch (error) {
-    console.error('Get resource by ID error:', error);
-    return undefined;
-  }
+    await simulateDelay();
+    return (db[key] as Resource[]).find(item => item.id === id);
 };
 
-export const add = async (key: ResourceType, item: Omit<Resource, 'id' | 'created_at'>): Promise<Resource> => {
-  try {
-    const { data, error } = await supabase
-      .from(key)
-      .insert(item)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data as Resource;
-  } catch (error) {
-    console.error('Add resource error:', error);
-    throw error;
-  }
+export const add = async (key: ResourceType, item: Omit<Resource, 'id'|'created_at'>): Promise<Resource> => {
+    await simulateDelay();
+    const newItem = {
+        ...item,
+        id: `${key.slice(0,3)}${Date.now()}`,
+        created_at: new Date().toISOString(),
+    } as Resource;
+    (db[key] as Resource[]).push(newItem);
+    return newItem;
 };
 
 export const update = async (key: ResourceType, updatedItem: Resource): Promise<Resource> => {
-  try {
-    const { data, error } = await supabase
-      .from(key)
-      .update(updatedItem)
-      .eq('id', updatedItem.id)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(error.message);
+    await simulateDelay();
+    const collection = db[key] as Resource[];
+    const index = collection.findIndex(item => item.id === updatedItem.id);
+    if (index !== -1) {
+        collection[index] = { ...collection[index], ...updatedItem };
+        return collection[index];
     }
-
-    return data as Resource;
-  } catch (error) {
-    console.error('Update resource error:', error);
-    throw error;
-  }
+    throw new Error("Item not found for update.");
 };
 
-// =============================================
-// RESOURCE REQUEST FUNCTIONS
-// =============================================
 
+// Resource Requests
 export const getResourceRequests = async (): Promise<ResourceRequest[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('resource_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Get resource requests error:', error);
-      return [];
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Get resource requests error:', error);
-    return [];
-  }
-};
-
-export const createResourceRequest = async (
-  reqData: Omit<ResourceRequest, 'id' | 'created_at' | 'status'>
-): Promise<ResourceRequest> => {
-  try {
-    const { data, error } = await supabase
-      .from('resource_requests')
-      .insert({
-        ...reqData,
-        status: ApplicationStatus.Pending
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Create resource request error:', error);
-    throw error;
-  }
-};
-
+    await simulateDelay();
+    return [...db.resource_requests];
+}
+export const createResourceRequest = async (reqData: Omit<ResourceRequest, 'id'|'created_at'|'status'>): Promise<ResourceRequest> => {
+    await simulateDelay();
+    const newReq: ResourceRequest = { 
+        ...reqData, 
+        id: `req${Date.now()}`,
+        created_at: new Date().toISOString(),
+        status: ApplicationStatus.Pending 
+    };
+    db.resource_requests.push(newReq);
+    return newReq;
+}
 export const getResourceRequestsForNgo = async (ngoId: string): Promise<ResourceRequest[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('resource_requests')
-      .select('*')
-      .eq('donating_organization_id', ngoId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Get resource requests for NGO error:', error);
-      return [];
+    await simulateDelay();
+    return db.resource_requests.filter(req => req.donating_organization_id === ngoId);
+}
+export const updateResourceRequestStatus = async (reqId: string, status: ApplicationStatus): Promise<ResourceRequest> => {
+    await simulateDelay();
+    const request = db.resource_requests.find(req => req.id === reqId);
+    if (request) {
+        request.status = status;
+        
+        if (status === ApplicationStatus.Approved) {
+            const resource = (db[request.resource_type] as Resource[]).find(r => r.id === request.resource_id);
+            if(resource) {
+                resource.status = ResourceStatus.Donated;
+            }
+        }
+        return { ...request };
     }
-
-    return data || [];
-  } catch (error) {
-    console.error('Get resource requests for NGO error:', error);
-    return [];
-  }
-};
-
-export const updateResourceRequestStatus = async (
-  reqId: string, 
-  status: ApplicationStatus
-): Promise<ResourceRequest> => {
-  try {
-    const { data, error } = await supabase
-      .from('resource_requests')
-      .update({ status })
-      .eq('id', reqId)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Update resource request status error:', error);
-    throw error;
-  }
-};
-
-// =============================================
-// MESSAGE FUNCTIONS
-// =============================================
-
-export const getMessages = async (organizationId: string): Promise<any[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('messages')
-      .select(`
-        *,
-        sender_organization:organizations!sender_organization_id(name),
-        recipient_organization:organizations!recipient_organization_id(name)
-      `)
-      .or(`sender_organization_id.eq.${organizationId},recipient_organization_id.eq.${organizationId}`)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Get messages error:', error);
-      return [];
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Get messages error:', error);
-    return [];
-  }
-};
-
-export const sendMessage = async (messageData: {
-  sender_organization_id: string;
-  recipient_organization_id: string;
-  subject: string;
-  content: string;
-  resource_request_id?: string;
-}): Promise<any> => {
-  try {
-    const { data, error } = await supabase
-      .from('messages')
-      .insert(messageData)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Send message error:', error);
-    throw error;
-  }
-};
-
-// =============================================
-// NOTIFICATION FUNCTIONS
-// =============================================
-
-export const getNotifications = async (organizationId: string): Promise<any[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Get notifications error:', error);
-      return [];
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Get notifications error:', error);
-    return [];
-  }
-};
-
-export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true, read_at: new Date().toISOString() })
-      .eq('id', notificationId);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-  } catch (error) {
-    console.error('Mark notification as read error:', error);
-    throw error;
-  }
-};
-
-// =============================================
-// STATISTICS FUNCTIONS
-// =============================================
-
-export const getOrganizationStats = async (organizationId: string): Promise<any> => {
-  try {
-    const { data, error } = await supabase
-      .rpc('get_organization_stats', { p_organization_id: organizationId });
-
-    if (error) {
-      console.error('Get organization stats error:', error);
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Get organization stats error:', error);
-    return null;
-  }
-};
-
-// =============================================
-// SEARCH FUNCTIONS
-// =============================================
-
-export const searchResources = async (filters: {
-  search_query?: string;
-  resource_type?: ResourceType;
-  category?: ArticleCategory;
-  state?: string;
-  urgent_only?: boolean;
-  organization_id?: string;
-}): Promise<any[]> => {
-  try {
-    const { data, error } = await supabase
-      .rpc('search_resources', {
-        p_search_query: filters.search_query || null,
-        p_resource_type: filters.resource_type || null,
-        p_category: filters.category || null,
-        p_state: filters.state || null,
-        p_urgent_only: filters.urgent_only || false,
-        p_organization_id: filters.organization_id || null
-      });
-
-    if (error) {
-      console.error('Search resources error:', error);
-      return [];
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Search resources error:', error);
-    return [];
-  }
-};
-
-// =============================================
-// UTILITY FUNCTIONS
-// =============================================
-
-export const canRequestResource = async (
-  requestingOrganizationId: string,
-  resourceType: ResourceType,
-  resourceId: string
-): Promise<boolean> => {
-  try {
-    const { data, error } = await supabase
-      .rpc('can_request_resource', {
-        p_requesting_organization_id: requestingOrganizationId,
-        p_resource_type: resourceType,
-        p_resource_id: resourceId
-      });
-
-    if (error) {
-      console.error('Can request resource error:', error);
-      return false;
-    }
-
-    return data || false;
-  } catch (error) {
-    console.error('Can request resource error:', error);
-    return false;
-  }
-};
+    throw new Error("Request not found.");
+}

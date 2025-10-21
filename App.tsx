@@ -17,7 +17,7 @@ const AppContent: React.FC = () => {
   const hasFullWidthLayout = ['/'].includes(location.pathname);
 
   const mainClasses = hasFullWidthLayout
-    ? "flex-grow flex"
+    ? "flex-grow"
     : "flex-grow container mx-auto px-4 py-8";
 
   return (
