@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Organization, OrganizationStatus } from '../types';
+import ErrorAlert from '../components/ErrorAlert';
 
 const AuthPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('login'); // 'login', 'registerNgo'
@@ -38,7 +39,9 @@ const AuthPage: React.FC = () => {
          setError('E-mail ou senha inválidos.');
       }
     } catch (err) {
-      setError('Falha no login. Verifique seu e-mail e senha.');
+      console.error('Login error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Falha no login. Verifique seu e-mail e senha.';
+      setError(errorMessage);
     }
   };
   
@@ -61,7 +64,9 @@ const AuthPage: React.FC = () => {
         await registerNgo(ngoData, ngoForm.password);
         navigate('/pending-approval'); 
     } catch (err) {
-        setError('Falha no cadastro da ONG. Tente novamente.');
+        console.error('Register NGO error:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Falha no cadastro da ONG. Tente novamente.';
+        setError(errorMessage);
     }
   };
 
@@ -109,7 +114,10 @@ const AuthPage: React.FC = () => {
           <button onClick={() => setActiveTab('registerNgo')} className={`flex-1 py-3 text-center font-medium ${activeTab === 'registerNgo' ? 'border-b-2 border-primary text-primary' : 'text-gray-500 hover:bg-gray-50'}`}>Cadastrar ONG</button>
         </div>
         <div className="p-6">
-            {error && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-4">{error}</p>}
+            <ErrorAlert 
+              error={error} 
+              onClose={() => setError('')} 
+            />
             {renderForm()}
         </div>
       </div>

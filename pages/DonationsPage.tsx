@@ -5,6 +5,7 @@ import { useData } from '../context/DataContext';
 import { Link } from 'react-router-dom';
 import { Medicine, Ration, Article, ResourceStatus, Resource, ResourceType, Organization, ArticleCategory } from '../types';
 import Spinner from '../components/Spinner';
+import ErrorAlert from '../components/ErrorAlert';
 import { Pill, Bone, Shirt, MapPin, Calendar, Box, AlertTriangle, Search } from 'lucide-react';
 
 
@@ -98,7 +99,7 @@ const ResourceCard: React.FC<{ item: DonationItem }> = ({ item }) => {
 
 const DonationsPage: React.FC = () => {
   const { user } = useAuth();
-  const { organizations, medicines, rations, articles, loading: dataLoading } = useData();
+  const { organizations, medicines, rations, articles, loading: dataLoading, error, clearError } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -170,6 +171,11 @@ const DonationsPage: React.FC = () => {
           Encontre itens essenciais doados por outras ONGs e solicite o que você precisa.
         </p>
       </div>
+
+      <ErrorAlert 
+        error={error} 
+        onClose={clearError} 
+      />
 
       {/* --- Filter Bar --- */}
       <div className="bg-white shadow-md rounded-lg p-4 mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
